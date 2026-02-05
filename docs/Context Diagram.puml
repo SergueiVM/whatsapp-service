@@ -1,0 +1,34 @@
+@startuml
+!theme generali from https://raw.githubusercontent.com/SergueiVM/resources/master/plantuml/themes
+!include https://raw.githubusercontent.com/SergueiVM/resources/master/plantuml/c4model.iuml
+
+'LAYOUT_LANDSCAPE()
+show @unlinked
+
+title WhatsApp Service Context
+Person_Ext(receiver, "Receiver")
+System_Ext(client1, "Client 1", "Consumer of whatsApp")
+System_Ext(whatsapp, "<$whatsapp*.4>")
+
+Deployment_Node(aws, "<$AWSCloud>")
+    Container(authBucket, "Auth Bucket", , $tags=s3)
+    ContainerQueue(messageTopic, "Message Notification Topic", "SNS")
+    ContainerQueue(client1Queue, "Client 1 Queue", "SQS")
+Boundary_End()
+
+Deployment_Node(render, "<$render*.1>")
+    Container(whatsappService, "WhatsApp Service", "Express+Docker")
+Boundary_End()
+
+Rel(client1, whatsappService, "Auth")
+
+BiRel(receiver, whatsapp, "Reads / Sends")
+Rel(whatsappService, whatsapp, "reads", $tags=async)
+Rel(whatsappService, whatsapp, "sends")
+Rel(whatsappService, authBucket, "get Remote Auth Session")
+Rel(whatsappService, messageTopic, "send message")
+Rel(messageTopic, client1Queue, "store message")
+Rel(client1, client1Queue, "Read messages", $tags=async)
+
+SHOW_LEGEND()
+@enduml
